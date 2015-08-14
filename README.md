@@ -32,8 +32,8 @@ Actions :
 
 Example :
 
-    connect.rb -a c -s caer1 -e pp2              = connect to caer1 in PP2
-    connect.rb -a l -s caer1,caer2,proxy -e live = list IPs for caer1/2 and proxy in live
+    connect.rb -a c -s app1 -e dev              = connect to app1 in dev
+    connect.rb -a l -s app1,app2,proxy -e live = list IPs for app1/2 and proxy in live
     connect.rb -a r -s proxy                     = search of details for connection like "proxy"
 
 Or use the "rcon" scripts as shortcuts.
