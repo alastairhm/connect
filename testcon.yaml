@@ -1,0 +1,6 @@
+---
+action : c
+servers :
+    - app1 : test
+    - app1 : test
+    - web1 : test

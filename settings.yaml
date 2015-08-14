@@ -1,0 +1,9 @@
+---
+user         : amontgomery
+winprofile   : Colours
+linuxprofile : ""
+winapp       : "putty -load"
+linuxapp     : 'terminator --geometry=1000x400 -e "ssh '
+rdpwin       : "mstsc /w:1024 /h:700 /V:"
+rdplinux     : "rdesktop -g 60% "
+
