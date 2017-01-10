@@ -1,0 +1,15 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    rainbow (2.0.0)
+    terminal-table (1.5.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  rainbow
+  terminal-table
+
+BUNDLED WITH
+   1.10.6

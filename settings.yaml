@@ -2,8 +2,18 @@
 user         : amontgomery
 winprofile   : Colours
 linuxprofile : ""
+macprofile   : ""
 winapp       : "putty -load"
+wintail      : ""
 linuxapp     : 'terminator --geometry=1000x400 -e "ssh '
+linuxtail    : "\" > /dev/null 2>&1 &"
+macapp       : "itermtab.scpt"
+mactail      : ""
+#macapp       : "osascript -e 'tell application \"Terminal\" to do script \"ssh"
+#mactail      : ";exit\"'"
 rdpwin       : "mstsc /w:1024 /h:700 /V:"
-rdplinux     : "rdesktop -g 60% "
+rdplinux     : "rdesktop -g1500x900 "
+historysize  : 10
+
+#macapp       : "osascript -e 'tell application \"Terminal\" to activate' -e 'tell application \"System Events\" to tell process \"Terminal\" to keystroke \"t\" using command down' -e 'tell application \"Terminal\" to do script \"ssh"
 
