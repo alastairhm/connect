@@ -10,7 +10,7 @@ This README would normally document whatever steps are necessary to get your app
 ### How do I get set up? ###
 
 * Requires Ruby, SSH client (Putty or OpenSSH) and RDP client (Windows own or rdesktop on linux)
-* Ruby Gem Terminal Table (gem install terminal-table)
+* Install Ruby Gems (run `bundle install`)
 * Configuration via settings.yaml
 * Connection details in details.yaml
 * Environment details in envs.yaml

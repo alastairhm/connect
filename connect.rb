@@ -295,7 +295,7 @@ when "c","p","l","k","connect","ping","list","key","push","pull"
         if validIP(multiKeys.thinArray[0]) then
             Action.new(action,multiKeys.thinArray[0],options.user,sshcom,'dev',multiKeys.thinArray[0],options.type,tail)
         else
-            brght("Error: you must pass both server and environment options")
+            bright("Error: you must pass both server and environment options")
             puts help
         end
     end
