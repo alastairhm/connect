@@ -244,8 +244,8 @@ when "h", "check"
     multiports = Flatten.new(options.port)
     multiEnv = Flatten.new(options.envs)
 
-    multiservers.thinArray.each { |address|
-        multiEnv.thinArray.each { |env|
+    multiservers.thin_array.each { |address|
+        multiEnv.thin_array.each { |env|
             #Check if we've got an IP passed
             if (address =~ Resolv::IPv4::Regex) then
                 server = address
@@ -253,7 +253,7 @@ when "h", "check"
                 myIP = GenIP.new(myhash,envs,address,env)
                 server = myIP.ip
             end
-            multiports.thinArray.each { |port|
+            multiports.thin_array.each { |port|
                 open_port(server,port)
             }
         }
@@ -279,9 +279,9 @@ when "c","p","l","k","connect","ping","list","key","push","pull"
 	tail=options.file.strip()
     end
 
-    if multiEnv.thinArray.size != 0 and multiKeys.thinArray.size !=0 then
-        multiKeys.thinArray.each { |key|
-            multiEnv.thinArray.each { |env|
+    if multiEnv.thin_array.size != 0 and multiKeys.thin_array.size !=0 then
+        multiKeys.thin_array.each { |key|
+            multiEnv.thin_array.each { |env|
                 myIP = GenIP.new(myhash,envs,key,env)
                 if myIP.valid then
                     Action.new(action,myIP.ip,options.user,sshcom,env,key,options.type,tail)
@@ -292,8 +292,8 @@ when "c","p","l","k","connect","ping","list","key","push","pull"
             }
         }
     else
-        if validIP(multiKeys.thinArray[0]) then
-            Action.new(action,multiKeys.thinArray[0],options.user,sshcom,'dev',multiKeys.thinArray[0],options.type,tail)
+        if validIP(multiKeys.thin_array[0]) then
+            Action.new(action,multiKeys.thin_array[0],options.user,sshcom,'dev',multiKeys.thin_array[0],options.type,tail)
         else
             bright("Error: you must pass both server and environment options")
             puts help
