@@ -20,7 +20,7 @@ This README would normally document whatever steps are necessary to get your app
 
 Usage   :
 
-    connect.rb -s <action> -s [<server>|<server1>,<server2>,...] -e [<environment>|<env1>,<env2>,...] -p ports
+    connect.rb -a <action> -s [<server>|<server1>,<server2>,...] -e [<environment>|<env1>,<env2>,...] -p ports
 
 Actions :
 * c = connect
