@@ -2,11 +2,13 @@
 user         : amontgomery
 winprofile   : Colours
 linuxprofile : ""
+herdrprofile : ""
 macprofile   : ""
 winapp       : "putty -load"
 wintail      : ""
-linuxapp     : 'terminator --geometry=1000x400 -e "ssh '
-linuxtail    : "\" > /dev/null 2>&1 &"
+linuxapp: 'tmux new-window "ssh '
+linuxtail: '|| read -n 1 -s"'
+herdrapp: 'herd_ssh "'
 macapp       : "itermtab.scpt"
 mactail      : ""
 #macapp       : "osascript -e 'tell application \"Terminal\" to do script \"ssh"

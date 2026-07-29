@@ -9,7 +9,7 @@ class History
     def initialize(filename,size)
         @history = Array.new()
         @file = File.expand_path(File.join(File.dirname(__FILE__), filename))
-        @history = YAML::load_file(@file)
+        @history = YAML.safe_load(File.read(@file)) || []
         if size > 0 && size != nil then
             @size = size
 	else

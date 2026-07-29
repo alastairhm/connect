@@ -12,35 +12,35 @@ require 'fileutils'
 require 'rainbow'
 require 'resolv'
 
-require File.expand_path(File.join(File.dirname(__FILE__), "lib/GenIP"))
-require File.expand_path(File.join(File.dirname(__FILE__), "lib/OS"))
-require File.expand_path(File.join(File.dirname(__FILE__), "lib/Flatten"))
-require File.expand_path(File.join(File.dirname(__FILE__), "lib/History"))
+require File.expand_path(File.join(File.dirname(__FILE__), "lib/gen_ip"))
+require File.expand_path(File.join(File.dirname(__FILE__), "lib/os"))
+require File.expand_path(File.join(File.dirname(__FILE__), "lib/flatten"))
+require File.expand_path(File.join(File.dirname(__FILE__), "lib/history"))
 
 #--------------------------------------------------
 class Action
-    def initialize(action,ip,puser,sshcom,env,key,type,tail)
+    def initialize(action,ip,p_user,ssh_com,env,key,type,tail)
         case action
         when "c"
             puts ">>>> Connection to #{ip}"
             $history.push(ip)
             if type == "ssh" then
-                spawn sshcom+" #{puser}@#{ip}"+tail
+                spawn ssh_com+" #{p_user}@#{ip}"+tail
                 sleep 1
             else
-                spawn sshcom+ip
+                spawn ssh_com+ip
             end
         when "p"
             system "ping #{ip}"
         when "key","k"
-            puts "Copying #{puser}'s ssh key to #{ip}"
-            system "ssh-copy-id #{puser}@#{ip}"
+            puts "Copying #{p_user}'s ssh key to #{ip}"
+            system "ssh-copy-id #{p_user}@#{ip}"
         when "push"
             puts "Copying file #{tail} to #{ip}"
-            system "scp #{tail} #{puser}@#{ip}:/home/#{puser}/" 
+            system "scp #{tail} #{p_user}@#{ip}:/home/#{p_user}/"
         when "pull"
             puts "Copying file #{tail} from #{ip}"
-            system "scp #{puser}@#{ip}:/home/#{puser}/#{tail} ./" 
+            system "scp #{p_user}@#{ip}:/home/#{p_user}/#{tail} ./" 
         when "l"
             puts "The IP for #{key} in #{env} is #{ip}"
         else
@@ -49,15 +49,15 @@ class Action
     end
 end
 #--------------------------------------------------
-def getName(ip)
+def get_name(ip)
     name = 'Not Found'
-    begin
-        Resolv::DNS.open() do |r|
-            name = r.getname(ip)
-        end
-    rescue
-        name = 'DNS Entry Not Found'
-    end
+#    begin
+#        Resolv::DNS.open() do |r|
+#            name = r.getname(ip)
+#        end
+#    rescue
+#        name = 'DNS Entry Not Found'
+#    end
     return name.to_s
 end
 #--------------------------------------------------
@@ -85,14 +85,22 @@ rescue (Errno::ECONNREFUSED)
     puts " - closed."
 end
 #--------------------------------------------------
-def validIP(address)
+def terminal_manager
+  return :herdr if ENV["HERDR_ENV"] == "1"
+  return :tmux if ENV["TMUX"]
+
+  :none
+end
+#--------------------------------------------------
+def valid_ip(address)
     address =~ Resolv::IPv4::Regex
 end
 #--------------------------------------------------
-def loadYAML(filename)
-    YAML::load_file(File.expand_path(File.join(File.dirname(__FILE__), filename)))
+def load_yaml(filename)
+    path = File.expand_path(File.join(File.dirname(__FILE__), filename))
+    YAML.safe_load(File.read(path), permitted_classes: [Symbol])
 end
-def saveYAML(hash,filename)
+def save_yaml(hash,filename)
     pathfile = File.expand_path(File.join(File.dirname(__FILE__), filename))
     FileUtils.cp pathfile, pathfile+'.bak'
     File.open(pathfile,'w') do |f2|
@@ -100,23 +108,23 @@ def saveYAML(hash,filename)
     end
 end
 #--------------------------------------------------
-def searchServer(pattern,myhash,options,envs,sshcom,tail)
-    merged = myhash.merge(myhash.invert)
+def search_server(pattern,my_hash,options,envs,ssh_com,tail)
+    merged = my_hash.merge(my_hash.invert)
     result = merged.keys.select{|i| i[Regexp.new(options.server[0], "i")]}
     if result.size != 0
         prompt("Details matching #{options.server[0]}")
         rows = []
         counter = 0
-        result.each {|key| rows << [counter+1,key,merged[key]]
+        result.each {|key| rows << [counter+1,key,merged[key]["ip"]]
             counter +=1
         }
         table = Terminal::Table.new :headings => ['','Name', 'IP'], :rows => rows
         puts table
         prompt("Do Connect, Ping or Quit [cpq] ?")
         actions = $stdin.gets.chomp
-        actarr = actions.split(',')
-        tenv = ""
-        actarr.each { |action|
+        act_arr = actions.split(',')
+        t_env = ""
+        act_arr.each { |action|
             value = action.to_i
             if value > result.size then
                 value = 0
@@ -124,25 +132,31 @@ def searchServer(pattern,myhash,options,envs,sshcom,tail)
             end
             if value != 0 then
                 env = 'dev'
-                if validIP(merged[result[value-1]]) then
-                    ip = merged[result[value-1]]
+                puts merged[result[value-1]]["ip"].to_s
+                if valid_ip(merged[result[value-1]]["ip"]) then
+                    ip = merged[result[value-1]]["ip"]
                 else
-                    if tenv.empty? then
+                    if t_env.empty? then
                         prompt("Which environment? #{envs.keys} ?")
-                        tenv = $stdin.gets.chomp
+                        t_env = $stdin.gets.chomp
                     end
-                    myIP = GenIP.new(merged,envs,result[value-1],tenv)
-                    ip = myIP.ip
-                    env = tenv
+                    my_ip = GenIP.new(merged,envs,result[value-1]["ip"],t_env)
+                    ip = my_ip.ip
+                    env = t_env
                 end
-                Action.new('c',ip,options.user,sshcom,env,result[value-1],options.type,tail)
+                user = options.user
+                if merged[result[value-1]]["user"] then
+                    user = merged[result[value-1]]["user"]
+                end
+                Action.new('c',ip,user,ssh_com,env,result[value-1],options.type,tail)
             elsif action != "q" and action != "" then
                 prompt("Which environment? #{envs.keys} ?")
                 env = $stdin.gets.chomp
                 result.each { |key|
-                    myIP = GenIP.new(merged,envs,key,env)
-                    if myIP.valid then
-                        Action.new(action,myIP.ip,options.user,sshcom,env,key,options.type,tail)
+                    my_ip = GenIP.new(merged,envs,key,env)
+                    if my_ip.valid then
+                        user = merged[result[value-1]]["user"] || options.user
+                        Action.new(action,my_ip.ip,user,ssh_com,env,key,options.type,tail)
                     else
                         puts "Key '#{key}' or environment '#{env}' not found"
                     end
@@ -162,23 +176,28 @@ puts "Aghhh I'm running on Windows ):" if OS.windows?
 bright("Linux, everything is right with the world (:") if OS.linux?
 bright("Mac, shiny :)") if OS.mac?
 puts "\n"
-myhash   = loadYAML('details.yaml')
-envs     = loadYAML('envs.yaml')
-settings = loadYAML('settings.yaml')
+my_hash   = load_yaml('config/details.yaml')
+envs     = load_yaml('config/envs.yaml')
+settings = load_yaml('config/settings.yaml')
 
-$history = History.new('../history.yaml',settings['historysize'])
+prompt("Loaded #{my_hash.size} server details")
+prompt("Loaded #{envs.size} environments")
+
+$history = History.new('../config/history.yaml',settings['historysize'])
 user = settings['user']
 profile = settings['profile']
-winssh = settings['winapp'] + " " + settings['winprofile']
-linuxssh = settings['linuxapp'] + " " + settings['linuxprofile']
-macssh = settings['macapp'] + " " + settings['macprofile']
-rdpwin = settings['rdpwin']
-rdplinux = settings['rdplinux']
-rdpmac = settings['mac1pp'] 
-mactail = settings['mactail']
-linuxtail = settings['linuxtail']
-wintail = settings['wintail']
-sshcom = ""
+win_ssh = settings['winapp'] + " " + settings['winprofile']
+linux_ssh = settings['linuxapp'] + " " + settings['linuxprofile']
+herdr_ssh = settings['herdrapp'] + " " + settings['herdrprofile']
+mac_ssh = settings['macapp'] + " " + settings['macprofile']
+rdp_win = settings['rdpwin']
+rdp_linux = settings['rdplinux']
+rdp_mac = settings['mac1pp'] 
+mac_tail = settings['mactail']
+linux_tail = settings['linuxtail']
+herdr_tail = settings['herdrtail']
+win_tail = settings['wintail']
+ssh_com = ""
 tail = ""
 #Check options
 opts = OptionParser.new
@@ -199,32 +218,44 @@ opts.on("-f file", "--file", String, "YAML file of servers to process") { |v| op
 opts.on("-t type", "--type", String, "ssh or rdp") { |v| options.type = v }
 opts.on("-u user", "--user", String, "Username") { |u| options.user = u.chomp}
 begin
-  opts.parse!(ARGV)
+    opts.parse!(ARGV)
 rescue OptionParser::ParseError => e
-  puts e
+    puts e
 end
 
 help = opts.help
 
 
-if options.type == "ssh" then
-    if OS.windows? then
-        sshcom = winssh
-        tail = wintail
-    elsif OS.linux? then
-        sshcom = linuxssh
-        tail = linuxtail
-    elsif OS.mac? then
-        sshcom = macssh
-        tail = mactail
+case options.type
+when "ssh"
+    case
+    when OS.windows?
+        ssh_com = win_ssh
+        tail = win_tail
+    when OS.linux?
+        if terminal_manager == :herdr
+          ssh_com = herdr_ssh
+          tail = herdr_tail
+        else
+          ssh_com = linux_ssh
+          tail = linux_tail
+        end
+    when OS.mac?
+        ssh_com = mac_ssh
+        tail = mac_tail
     else
-        puts 'Sorry do not reckonize your OS'
+        puts 'Sorry, do not recognize your OS'
         exit 1
     end
 else
-    sshcom = rdpwin if OS.windows?
-    sshcom = rdplinux if OS.linux?
-    sshcom = rdpmac if OS.mac?
+    ssh_com = case
+        when OS.windows? then rdp_win
+        when OS.linux?   then rdp_linux
+        when OS.mac?     then rdp_mac
+        else
+            puts 'Sorry, do not recognize your OS'
+            exit 1
+        end
 end
 
 case options.action
@@ -232,7 +263,7 @@ when "d", "dump"
     #Dump the details list
     rows = []
     count = 1
-    myhash.sort.each { |array|
+    my_hash.sort.each { |array|
         rows << [count,array[0],array[1]]
         count +=1
     }
@@ -240,20 +271,20 @@ when "d", "dump"
     puts table
 when "h", "check"
     #Port Scan through servers and ports
-    multiservers = Flatten.new(options.server)
-    multiports = Flatten.new(options.port)
-    multiEnv = Flatten.new(options.envs)
+    multi_servers = Flatten.new(options.server)
+    multi_ports = Flatten.new(options.port)
+    multi_env = Flatten.new(options.envs)
 
-    multiservers.thin_array.each { |address|
-        multiEnv.thin_array.each { |env|
+    multi_servers.thin_array.each { |address|
+        multi_env.thin_array.each { |env|
             #Check if we've got an IP passed
             if (address =~ Resolv::IPv4::Regex) then
                 server = address
             else
-                myIP = GenIP.new(myhash,envs,address,env)
-                server = myIP.ip
+                my_ip = GenIP.new(my_hash,envs,address,env)
+                server = my_ip.ip
             end
-            multiports.thin_array.each { |port|
+            multi_ports.thin_array.each { |port|
                 open_port(server,port)
             }
         }
@@ -263,7 +294,7 @@ when "r","regex","search","s"
     pattern = options.server
 
     if pattern.size == 1 then
-        searchServer(pattern,myhash,options,envs,sshcom,tail)
+        search_server(pattern,my_hash,options,envs,ssh_com,tail)
     else
         puts "Incorrect search pattern #{pattern.to_s}"
         puts help
@@ -272,61 +303,61 @@ when "c","p","l","k","connect","ping","list","key","push","pull"
     #Connect, Ping or list details
     action = options.action
 
-    multiKeys = Flatten.new(options.server)
-    multiEnv = Flatten.new(options.envs)
+    multi_keys = Flatten.new(options.server)
+    multi_env = Flatten.new(options.envs)
 
     if action == 'push' or action == 'pull' then
 	tail=options.file.strip()
     end
 
-    if multiEnv.thin_array.size != 0 and multiKeys.thin_array.size !=0 then
-        multiKeys.thin_array.each { |key|
-            multiEnv.thin_array.each { |env|
-                myIP = GenIP.new(myhash,envs,key,env)
-                if myIP.valid then
-                    Action.new(action,myIP.ip,options.user,sshcom,env,key,options.type,tail)
+    if multi_env.thin_array.size != 0 and multi_keys.thin_array.size !=0 then
+        multi_keys.thin_array.each { |key|
+            multi_env.thin_array.each { |env|
+                my_ip = GenIP.new(my_hash,envs,key,env)
+                if my_ip.valid then
+                    Action.new(action,my_ip.ip,options.user,ssh_com,env,key,options.type,tail)
                 else
                     bright("Key '#{key}' or environment '#{env}' not found, searching...")
-                    searchServer(key,myhash,options,envs,sshcom,tail)
+                    search_server(key,my_hash,options,envs,ssh_com,tail)
                 end
             }
         }
     else
-        if validIP(multiKeys.thin_array[0]) then
-            Action.new(action,multiKeys.thin_array[0],options.user,sshcom,'dev',multiKeys.thin_array[0],options.type,tail)
+        if valid_ip(multi_keys.thin_array[0]) then
+            Action.new(action,multi_keys.thin_array[0],options.user,ssh_com,'dev',multi_keys.thin_array[0],options.type,tail)
         else
             bright("Error: you must pass both server and environment options")
             puts help
         end
     end
 when 'f', 'file'
-    connections = YAML::load_file(options.file)
+    connections = YAML.safe_load(File.read(options.file), permitted_classes: [Symbol])
     servers = connections["servers"].inject(:merge)
     servers.each { |key,value|
-        myIP = GenIP.new(myhash,envs,key,value)
-        if myIP.valid then
-            Action.new(connections["action"],myIP.ip,options.user,sshcom,value,key,options.type,tail)
+        my_ip = GenIP.new(my_hash,envs,key,value)
+        if my_ip.valid then
+            Action.new(connections["action"],my_ip.ip,options.user,ssh_com,value,key,options.type,tail)
         else
             bright("Key '#{key}' or environment '#{value}' not found")
         end
     }
 when 'a','add'
     puts "Adding #{options.server[0]}, #{options.envs[0]} to the YAML"
-    myhash[options.server[0]]=options.envs[0]
-    saveYAML(myhash,'details.yaml')
+    my_hash[options.server[0]]=options.envs[0]
+    save_yaml(my_hash,'config/details.yaml')
 when 'last'
     ip = $history.history[$history.history.length()-1]
-    if validIP(ip) then
-        Action.new('c',ip,options.user,sshcom,"dev","",options.type,tail)
+    if valid_ip(ip) then
+        Action.new('c',ip,options.user,ssh_com,"dev","",options.type,tail)
     end
 when 'H','hist'
     rows = []
     counter = 0
     prompt('Working...')
-    merged = myhash.merge(myhash.invert)
+    merged = my_hash.merge(my_hash.invert)
         $history.history.each {|key| 
              tmp = merged[key]
-	     fqdn = getName(key)
+	     fqdn = get_name(key)
              rows << [counter+1,key,tmp,fqdn]
              counter +=1
         }
@@ -334,13 +365,13 @@ when 'H','hist'
     puts table
     prompt('Enter number to connect or Enter to quit')
     actions = $stdin.gets.chomp
-    actarr = actions.split(',')
-    actarr.each { |action|
+    act_arr = actions.split(',')
+    act_arr.each { |action|
     value = action.to_i
         if value != 0 and value <= $history.history.size then
             ip = $history.history[value-1]
-            if validIP(ip) then
-                Action.new('c',ip,options.user,sshcom,"dev","",options.type,tail)
+            if valid_ip(ip) then
+                Action.new('c',ip,options.user,ssh_com,"dev","",options.type,tail)
             end
         end
     }
