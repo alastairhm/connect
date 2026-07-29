@@ -343,7 +343,7 @@ when 'f', 'file'
     }
 when 'a','add'
     puts "Adding #{options.server[0]}, #{options.envs[0]} to the YAML"
-    my_hash[options.server[0]]=options.envs[0]
+    my_hash[options.server[0]] = {"ip" => options.envs[0]}
     save_yaml(my_hash,'config/details.yaml')
 when 'last'
     ip = $history.history[$history.history.length()-1]

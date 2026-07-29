@@ -1,8 +1,16 @@
 ---
-server1: 192.168.3.43
-server2: 192.168.3.55
-server3: 192.168.3.12
-app1: 192.xxx.0.3
-app2: 192.xxx.0.2
-web1: 192.xxx.0.233
-web2: 192.xxx.0.254
+server1:
+  ip: 192.168.3.43
+server2:
+  ip: 192.168.3.55
+server3:
+  ip: 192.168.3.12
+app1:
+  ip: 192.xxx.0.3
+app2:
+  ip: 192.xxx.0.2
+  user: appadmin
+web1:
+  ip: 192.xxx.0.233
+web2:
+  ip: 192.xxx.0.254
