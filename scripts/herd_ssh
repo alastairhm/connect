@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+tab=$(herdr tab create --label $1)
+pane=$(echo "$tab" | jq -r '.result.root_pane.pane_id')
+id=$(echo "$tab" | jq -r '.result.tab.tab_id')
+herdr tab focus "$id" >/dev/null 2>&1
+herdr pane run "$pane" "ssh $1 && exit"
